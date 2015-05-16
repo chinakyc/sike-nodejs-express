@@ -3,8 +3,11 @@
   "version": "0.0.1",
   "description": "middleware-stack",
   "main": "index.js",
+  "bin":{
+      "server": "bin/server.js"
+  },
   "scripts": {
-    "test": "mocha"
+    "test": "mocha --harmony"
   },
   "author": "Azul",
   "license": "MIT",
