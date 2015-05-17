@@ -7,7 +7,7 @@ function myexpress() {
 
 myexpress.prototype = http.createServer(
         function(req, res) {
-            this._next = this._drive(req, res);
+            this._next = this._drive(reqr res);
             function _next() {
                 if (arguments.length >= 1){
                     this.error = arguments[0];
@@ -52,7 +52,13 @@ myexpress.prototype = http.createServer(
         });
 
 myexpress.prototype.use = function(middleware) {
-    this.stack.push(middleware);
+    //NOTE:should `.use` subApp first
+    if(middleware instanceof myexpress){
+        this.stack = this.stack.concat(middleware.stack);
+    }
+    else{
+        this.stack.push(middleware);
+    }
 };
 
 myexpress.prototype._drive = function* (req, res){
