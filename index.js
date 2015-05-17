@@ -7,12 +7,12 @@ function myexpress() {
 
 myexpress.prototype = http.createServer(
         function(req, res) {
-            this._generator = this._drive(req, res);
+            this._iterator = this._generator(req, res);
             function _next() {
                 if (arguments.length >= 1){
                     this.error = arguments[0];
                 }
-                mid = this._generator.next();
+                mid = this._iterator.next();
                 if(mid.value !== undefined){
                     if (this.error !== undefined){
                         if(mid.value.length == 4){
@@ -61,7 +61,7 @@ myexpress.prototype.use = function(middleware) {
     }
 };
 
-myexpress.prototype._drive = function* (req, res){
+myexpress.prototype._generator = function* (req, res){
     //this._argvs = [req, res, this._next];
     var i;
     for(i=0;i<this.stack.length;i++){
