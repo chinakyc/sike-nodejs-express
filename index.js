@@ -7,12 +7,12 @@ function myexpress() {
 
 myexpress.prototype = http.createServer(
         function(req, res) {
-            this._next = this._drive(reqr, res);
+            this._generator = this._drive(req, res);
             function _next() {
                 if (arguments.length >= 1){
                     this.error = arguments[0];
                 }
-                mid = this._next.next();
+                mid = this._generator.next();
                 if(mid.value !== undefined){
                     if (this.error !== undefined){
                         if(mid.value.length == 4){
@@ -52,7 +52,7 @@ myexpress.prototype = http.createServer(
         });
 
 myexpress.prototype.use = function(middleware) {
-    //NOTE:should `.use` subApp first
+    //NOTE:should `subApp.use(middleware)` before `app.use(subApp)`
     if(middleware instanceof myexpress){
         this.stack = this.stack.concat(middleware.stack);
     }
