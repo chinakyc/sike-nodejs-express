@@ -7,32 +7,32 @@ function myexpress() {
 
 myexpress.prototype = http.createServer(
         function(req, res) {
-            this._iterator = this._generator(req, res);
+            req._iterator = this._generator(req, res);
             function _next() {
                 if (arguments.length >= 1){
-                    this.error = arguments[0];
+                    req._my_error = arguments[0];
                 }
-                mid = this._iterator.next();
+                var mid = req._iterator.next();
                 if(mid.value !== undefined){
-                    if (this.error !== undefined){
+                    if (req._my_error !== undefined){
                         if(mid.value.length == 4){
-                            mid.value(this.error, req, res, _next.bind(this));
+                            mid.value(req._my_error, req, res, _next);
                         }
                         else{
-                            _next.bind(this)();
+                            _next();
                         }
                     }
                     else{
                         try{
                             if(mid.value.length == 4){
-                                _next.bind(this)();
+                                _next();
                             }
                             else{
-                                mid.value(req, res, _next.bind(this));
+                                mid.value(req, res, _next);
                             }
                         }
                         catch(e){
-                            _next.bind(this)(e);
+                            _next(e);
                         }
                     }
                 }
@@ -40,8 +40,8 @@ myexpress.prototype = http.createServer(
             //mid = this._next.next();
             //var next = this._next.next;
             //mid.value(req, res, next.bind(this._next));
-            _next.call(this);
-            if(this.error !== undefined){
+            _next();
+            if(req._my_error !== undefined){
                 res.writeHeader(500);
                 res.end('Internal Error');
             }
@@ -62,11 +62,8 @@ myexpress.prototype.use = function(middleware) {
 };
 
 myexpress.prototype._generator = function* (req, res){
-    //this._argvs = [req, res, this._next];
     var i;
     for(i=0;i<this.stack.length;i++){
-        //var next = this._next.next;
-        //yield this.stack[i](req, res, next.bind(this._next));
         yield this.stack[i];
     }
 };
