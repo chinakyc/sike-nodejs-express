@@ -7,7 +7,7 @@ function myexpress() {
 
 myexpress.prototype = http.createServer(
         function(req, res) {
-            req._iterator = this._generator(req, res);
+            req._iterator = this._generator();
             function _next() {
                 if (arguments.length >= 1){
                     req._my_error = arguments[0];
@@ -37,9 +37,6 @@ myexpress.prototype = http.createServer(
                     }
                 }
             }
-            //mid = this._next.next();
-            //var next = this._next.next;
-            //mid.value(req, res, next.bind(this._next));
             _next();
             if(req._my_error !== undefined){
                 res.writeHeader(500);
@@ -61,7 +58,7 @@ myexpress.prototype.use = function(middleware) {
     }
 };
 
-myexpress.prototype._generator = function* (req, res){
+myexpress.prototype._generator = function* (){
     var i;
     for(i=0;i<this.stack.length;i++){
         yield this.stack[i];
