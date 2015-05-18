@@ -1,5 +1,6 @@
 module.exports = express_factory;
 var http = require("http");
+var Layer = require("./lib/layer");
 
 function myexpress() {
     this.stack = [];
@@ -7,16 +8,18 @@ function myexpress() {
 
 myexpress.prototype = http.createServer(
         function(req, res) {
-            req._iterator = this._generator();
+            _iterator = this._generator();
             function _next() {
                 if (arguments.length >= 1){
                     req._my_error = arguments[0];
+                    console.log(req._my_error);
                 }
-                var mid = req._iterator.next();
-                if(mid.value !== undefined){
+                var item = _iterator.next();
+                var layer = item.value ;
+                if(layer !== undefined){
                     if (req._my_error !== undefined){
-                        if(mid.value.length == 4){
-                            mid.value(req._my_error, req, res, _next);
+                        if(layer.handle.length == 4 && layer.match(req.url)){
+                            layer.handle(req._my_error, req, res, _next);
                         }
                         else{
                             _next();
@@ -24,11 +27,11 @@ myexpress.prototype = http.createServer(
                     }
                     else{
                         try{
-                            if(mid.value.length == 4){
-                                _next();
+                            if(layer.handle.length <= 3 && layer.match(req.url)){
+                                layer.handle(req, res, _next);
                             }
                             else{
-                                mid.value(req, res, _next);
+                                _next();
                             }
                         }
                         catch(e){
@@ -48,13 +51,18 @@ myexpress.prototype = http.createServer(
             }
         });
 
-myexpress.prototype.use = function(middleware) {
+myexpress.prototype.use = function(path, middleware) {
     //NOTE:should `subApp.use(middleware)` before `app.use(subApp)`
     if(middleware instanceof myexpress){
         this.stack = this.stack.concat(middleware.stack);
     }
     else{
-        this.stack.push(middleware);
+        if (arguments.length == 1){
+            middleware = path;
+            path = '/';
+        }
+        var layer = new Layer(path, middleware);
+        this.stack.push(layer);
     }
 };
 
