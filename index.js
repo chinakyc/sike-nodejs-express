@@ -2,6 +2,8 @@ module.exports = express_factory;
 
 var http = require("http");
 var Layer = require("./lib/layer");
+var makeRoute = require("./lib/route");
+var methods = require("methods");
 
 function myexpress() {
     this.stack = [];
@@ -92,13 +94,13 @@ myexpress.prototype.handle = function(err, req, res, next) {
         next();
     }
 };
-myexpress.prototype.use = function(path, middleware) {
+myexpress.prototype.use = function(path, middleware, options) {
     //mount middleware
     if (arguments.length == 1){
         middleware = path;
         path = '/';
     }
-    var layer = new Layer(path, middleware);
+    var layer = new Layer(path, middleware, options);
     this.stack.push(layer);
 };
 
@@ -117,6 +119,14 @@ function _trimming_path(url, path) {
         return url.replace(path, '');
     }
 }
+
+//Loop over the verbs and generate methods
+methods.forEach(function(method) {
+        myexpress.prototype[method] = function(path, middleware) {
+            middleware = makeRoute(method, middleware);
+            this.use(path, middleware, {end:true});
+        };
+    });
 
 function express_factory() {
     return new myexpress();

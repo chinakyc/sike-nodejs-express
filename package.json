@@ -17,6 +17,7 @@
     "supertest": "^1.0.1"
   },
   "dependencies": {
+    "methods": "^0.1.0",
     "path-to-regexp": "^1.1.1"
   }
 }
