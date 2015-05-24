@@ -3,8 +3,8 @@
   "version": "0.0.1",
   "description": "middleware-stack",
   "main": "index.js",
-  "bin":{
-      "server": "bin/server.js"
+  "bin": {
+    "server": "bin/server.js"
   },
   "scripts": {
     "test": "mocha --harmony"
@@ -15,5 +15,8 @@
     "chai": "^2.3.0",
     "mocha": "^2.2.5",
     "supertest": "^1.0.1"
+  },
+  "dependencies": {
+    "path-to-regexp": "^1.1.1"
   }
 }
