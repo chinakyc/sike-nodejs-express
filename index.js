@@ -47,7 +47,15 @@ myexpress.prototype.handle = function(err, req, res, next) {
         //so we discard it
         if(!item.done){
             matched = layer.match(req.url);
-            if (layer.isSubApp){
+            if (layer.isRoute){
+                if(matched){
+                    layer.handle(req._my_error, req, res, _next);
+                }
+                else{
+                    _next();
+                }
+            }
+            else if (layer.isSubApp){
                 if(matched){
                     req.url = _trimming_path(req.url, layer.path);
                     layer.handle(req._my_error, req, res, _next);
@@ -105,11 +113,32 @@ myexpress.prototype.use = function(path, middleware, options) {
 };
 
 myexpress.prototype._generator = function* (){
-    var i;
-    for(i=0;i<this.stack.length;i++){
-        yield this.stack[i];
+    //var i;
+    //for(i=0;i<this.stack.length;i++){
+        //yield this.stack[i];
+    for(i of this.stack){
+        yield i;
     }
 };
+
+//route
+myexpress.prototype.route = function(path) {
+    route = new makeRoute();
+    this.use(path, route, {end:true});
+    return route;
+};
+
+
+//add custom verb
+methods.push('all');
+//Loop over the verbs and generate methods
+methods.forEach(function(method) {
+        myexpress.prototype[method] = function(path, middleware) {
+            route = this.route(path);
+            route[method](middleware);
+            return this;
+        };
+    });
 
 function _trimming_path(url, path) {
     if (path.endsWith('/')){
@@ -119,14 +148,6 @@ function _trimming_path(url, path) {
         return url.replace(path, '');
     }
 }
-
-//Loop over the verbs and generate methods
-methods.forEach(function(method) {
-        myexpress.prototype[method] = function(path, middleware) {
-            middleware = makeRoute(method, middleware);
-            this.use(path, middleware, {end:true});
-        };
-    });
 
 function express_factory() {
     return new myexpress();
