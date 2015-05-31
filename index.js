@@ -22,8 +22,8 @@ myexpress.prototype = http.createServer(
         //the default action
         if (!res.headersSent){
             if(req._my_error !== undefined){
-                var statusCode = req._my_error.statusCode ? req._my_error.statusCode : 500;
-                var message = req._my_error.message? req._my_error.message : 'Internal Error';
+                var statusCode = req._my_error.statusCode || 500;
+                var message = req._my_error.message || 'Internal Error';
                 res.writeHeader(statusCode);
                 res.end(message);
             }
