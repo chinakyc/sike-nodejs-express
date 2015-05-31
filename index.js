@@ -4,38 +4,54 @@ var http = require("http");
 var Layer = require("./lib/layer");
 var makeRoute = require("./lib/route");
 var methods = require("methods");
+var reqProto = require("./lib/request");
+var resProto = require("./lib/response");
+var mime = require("mime");
 
 function myexpress() {
     this.stack = [];
+    this._factories = {};
 }
 
 myexpress.prototype = http.createServer(
     function (req, res) {
+        //patch req, res
+        this.monkey_patch(req, res);
         //main handler
         this.handle(undefined, req, res);
         //the default action
-        if(req._my_error !== undefined){
-            res.writeHeader(500);
-            res.end('Internal Error');
+        if (!res.headersSent){
+            if(req._my_error !== undefined){
+                var statusCode = req._my_error.statusCode ? req._my_error.statusCode : 500;
+                var message = req._my_error.message? req._my_error.message : 'Internal Error';
+                res.writeHeader(statusCode);
+                res.end(message);
+            }
+            else{
+                res.writeHeader(404);
+                res.end("Not Found");
+            }
         }
-        else{
-            res.writeHeader(404);
-            res.end('Not Found');
-        }
+        
     }
 );
 
 myexpress.prototype.handle = function(err, req, res, next) {
-    var orgUrl, matched, _iterator;
+    var orgUrl, matched, _iterator, parentapp;
     _iterator = this._generator();
+    //save req.url, req.app for resetting
     orgUrl = req.url;
+    parentapp = req.app;
     req._my_error = err;
     function _next() {
         /*
-         * subApp changed req.url so
+         * subApp changed req.url and  req.app
+         * every time call `_next`
          * resetting req.url to orgUrl
+         * resetting req.app to parentapp
          */
         req.url = orgUrl;
+        req.app = parentapp;
         //dummy error handle
         if (arguments.length >= 1){
             req._my_error = arguments[0];
@@ -57,6 +73,10 @@ myexpress.prototype.handle = function(err, req, res, next) {
             }
             else if (layer.isSubApp){
                 if(matched){
+                    //TODO
+                    //very ugly
+                    //set req.app to subApp;
+                    req.app = layer.subApp;
                     req.url = _trimming_path(req.url, layer.path);
                     layer.handle(req._my_error, req, res, _next);
                 }
@@ -113,9 +133,6 @@ myexpress.prototype.use = function(path, middleware, options) {
 };
 
 myexpress.prototype._generator = function* (){
-    //var i;
-    //for(i=0;i<this.stack.length;i++){
-        //yield this.stack[i];
     for(i of this.stack){
         yield i;
     }
@@ -128,6 +145,17 @@ myexpress.prototype.route = function(path) {
     return route;
 };
 
+//monkey_patch
+myexpress.prototype.monkey_patch = function(req, res) {
+    //access the app from req
+    req.app = this;
+    //access the response object from the request object, and vice veras.
+    req.res = res;
+    res.req = req;
+    //patch req and res
+    req.__proto__ = reqProto;
+    res.__proto__ = resProto;
+};
 
 //add custom verb
 methods.push('all');
@@ -139,6 +167,23 @@ methods.forEach(function(method) {
             return this;
         };
     });
+
+//dependence-injecton
+myexpress.prototype.factory = function(name, fn) {
+    var self = this;
+    function _setvalue(req, res, next) {
+        function _next(err, value){
+            if(err){
+                next(err);
+            }
+            else{
+                self._factories[name] = value;
+            }
+        }
+        fn(req, res, _next);
+    }
+    this._factories[name] = _setvalue;
+};
 
 function _trimming_path(url, path) {
     if (path.endsWith('/')){
